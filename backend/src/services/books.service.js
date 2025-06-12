@@ -15,7 +15,7 @@ const getAllBooks = async () => {
   return books;
 };
 
-const getBooksById = async (id) => {
+const getBookById = async (id) => {
   const book = await Book.findOne({ _id: id });
   return book;
 };
@@ -39,7 +39,7 @@ const updateBookById = async (id, newBook) => {
 module.exports = {
   deleteBookById,
   getAllBooks,
-  getBooksById,
+  getBookById,
   createBook,
   updateBookById,
 };

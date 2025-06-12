@@ -1,20 +1,38 @@
-const jwt = require('jsonwebtoken');
-const SECRET_KEY = process.env.JWT_SECRET || 'your_secret_key';
+const verifyAuth = require("../../../../book-library/middlewares/verifyAuth.middleware");
+const RevokedToken = require("../modles/revokedToken");
+const { verifyJWTToken } = require("../utils/jwt.util");
 
-function verifyToken(req, res, next) {
-  const token = req.header('Authorization')?.replace('Bearer ', '');
-
-  if (!token) {
-    return res.status(401).json({ message: 'Access Denied: No token provided' });
+const verifyJWTToken = async (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res
+      .status(401)
+      .json({ message: `Please provide authorization header` });
+  }
+  if (!authHeader.startsWith("Bearer")) {
+    return res
+      .status(401)
+      .json({ message: `Please provide token in a valid format` });
+  }
+  const token = authHeader.split(" ")[1];
+  console.log(token);
+  if (!token || token === "null" || token === "undefined") {
+    return res.status(401).json({ message: `Please provide token` });
   }
 
-  try {
-    const decoded = jwt.verify(token, SECRET_KEY);
-    req.user = decoded;
-    next();
-  } catch (error) {
-    res.status(400).json({ message: 'Invalid Token' });
-  }
-}
+  const revokedToken = await RevokedToken.findOne({ token });
 
-module.exports = verifyToken;
+  if (revokedToken) {
+    return res.status(401).json({ message: `Token is already revoked` });
+  }
+
+  const data = verifyJWTToken(token);
+  if (data.error) {
+    return res
+      .status(401)
+      .json({ message: ` Please provide a valid tken - ${data.message}` });
+  }
+  req.user = data;
+  next();
+};
+module.exports = verifyAuth;
